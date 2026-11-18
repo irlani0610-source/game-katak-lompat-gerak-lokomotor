@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lomba Katak Gerak Lokomotor</title>
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Baloo 2","Comic Sans MS","Trebuchet MS",sans-serif;background:linear-gradient(#8fe3ff,#e9fbff);color:#1d3b4f;min-height:100vh}
+.wrap{max-width:820px;margin:0 auto;padding:10px}
+h1{text-align:center;margin:6px 0;color:#0b7a4b;text-shadow:2px 2px #fff;font-size:clamp(22px,5vw,36px)}
+.card{background:#fff;border-radius:22px;padding:16px;box-shadow:0 6px 0 #9bd7e6;margin:10px 0}
+input{font:inherit;font-size:20px;padding:10px 14px;border:3px solid #7cc9dd;border-radius:14px;width:100%;margin:6px 0}
+button{font:inherit;font-size:20px;border:0;border-radius:16px;padding:12px 18px;background:#ffb300;color:#4a2c00;box-shadow:0 5px 0 #c98400;cursor:pointer}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #c98400}
+button:disabled{opacity:.7;cursor:default}
+.big{width:100%;font-size:26px;background:#2fc36b;color:#fff;box-shadow:0 5px 0 #1b8a4a;margin-top:8px}
+#bar{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-weight:700;font-size:18px}
+.pill{background:#fff;border-radius:999px;padding:4px 14px;box-shadow:0 3px 0 #9bd7e6}
+canvas{width:100%;height:280px;border-radius:22px;display:block;box-shadow:0 6px 0 #4aa6bd}
+#q{font-size:clamp(20px,4.5vw,28px);font-weight:700;margin:4px 0 10px}
+.opts{display:grid;gap:10px}
+.opts button{background:#e8f7ff;color:#1d3b4f;box-shadow:0 5px 0 #9bd7e6;text-align:left}
+.opts.two{grid-template-columns:1fr 1fr}
+.opts button.ok{background:#2fc36b;color:#fff;box-shadow:0 5px 0 #1b8a4a}
+.opts button.no{background:#ff6b6b;color:#fff;box-shadow:0 5px 0 #b83a3a}
+#fb{min-height:34px;font-size:22px;font-weight:700;margin-top:8px;text-align:center}
+.row{display:flex;gap:8px}.row input{margin:0}
+.ov{position:fixed;inset:0;background:rgba(10,60,80,.7);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}
+.ov.on{display:flex}
+.ov .card{max-width:480px;text-align:center}
+#cert{background:#fffbe6}
+.cert{border:10px double #d99a00;padding:22px;text-align:center;background:#fffdf0;width:100%;max-width:700px}
+.cert h2{font-size:clamp(26px,6vw,44px);color:#c77700;margin:0}
+.cert .n{font-size:clamp(26px,6vw,42px);color:#0b7a4b;border-bottom:3px dotted #d99a00;display:inline-block;padding:0 20px;margin:8px 0}
+@media print{body *{visibility:hidden}#cert,#cert *{visibility:visible}#cert{position:absolute;inset:0;background:#fff;display:flex}.noprint{display:none!important}}
+</style></head><body>
+<div class="wrap">
+<h1>🐸 Lomba Katak Melompat 🪷</h1>
+<div id="start" class="card">
+<p style="font-size:20px;margin:0 0 6px">Ayo, Gerak Berpindah Tempat (Gerak Lokomotor)! Jawab soal dengan benar agar katak melompat ke daratan. Jawaban salah membuat katak tenggelam!</p>
+<label>Namamu:<input id="nm" maxlength="30" placeholder="Tulis namamu"></label>
+<label>Kelasmu:<input id="kl" maxlength="10" placeholder="Contoh: 1A"></label>
+<button class="big" id="go">Mulai Lomba! 🚀</button>
+</div>
+<div id="game" style="display:none">
+<div id="bar"><span class="pill" id="lv"></span><span class="pill" id="no"></span><span class="pill" id="sk"></span></div>
+<canvas id="cv" height="280"></canvas>
+<div class="card"><div id="q"></div><div id="ans"></div><div id="fb"></div></div>
+</div>
+</div>
+<div class="ov" id="ban"><div class="card"><div id="bt" style="font-size:30px;font-weight:700"></div></div></div>
+<div class="ov" id="end"><div class="card"><div id="et"></div>
+<button class="big" id="ct" style="display:none">🏆 Lihat Sertifikat</button>
+<button class="big" id="ag" style="background:#ff8a00;box-shadow:0 5px 0 #b86100">Main Lagi 🔁</button></div></div>
+<div class="ov" id="cert"><div style="width:100%;max-width:700px"><div class="cert" id="cc"></div>
+<div class="noprint" style="display:flex;gap:8px;margin-top:10px"><button class="big" onclick="print()">🖨️ Cetak</button><button class="big" style="background:#ff8a00;box-shadow:0 5px 0 #b86100" onclick="cert.classList.remove('on')">Tutup</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const L=["Level 1: Sangat Mudah 🌱","Level 2: Mudah 🌼","Level 3: Sedang 🌟","Level 4: Sulit 🔥"];
+const pg=(q,o,a)=>({t:"pg",q,o,a});
+const bs=(q,a)=>({t:"bs",q,o:["Benar ✓","Salah ✗"],a:a?0:1});
+const jd=(q,a)=>({t:"jd",q:"Pasangkan: "+q+" ➜ ?",a});
+const is=(q,a)=>({t:"is",q,a});
+const JP=["Gerak Lokomotor","Berjalan","Berlari","Meloncat","Melompat","Depan","Kaki","Berayun bergantian","Tegak","Berpindah tempat"];
+const Q=[
+pg("Gerak lokomotor adalah gerakan ....",["berpindah tempat","berdiam diri","tidur"],0),
+pg("Contoh gerak lokomotor adalah ....",["duduk","berjalan","berdiri"],1),
+pg("Ketika berjalan, kaki melangkah secara ....",["bersamaan","bergantian","diam"],1),
+pg("Saat berjalan, pandangan mata sebaiknya ke ....",["depan","belakang","bawah terus"],0),
+pg("Ketika berlari, gerakan kaki lebih ... daripada berjalan.",["lambat","cepat","diam"],1),
+pg("Gerakan berpindah tempat dengan mengangkat kedua kaki bersamaan disebut ....",["berjalan","berlari","meloncat"],2),
+pg("Ketika meloncat, tolakan menggunakan ... kaki.",["satu","dua","tiga"],1),
+pg("Gerakan melompat bertumpu pada ... kaki.",["satu","dua","tiga"],0),
+pg("Saat berlari, kedua tangan bergerak ....",["berayun bergantian","diam saja","memegang kepala"],0),
+pg("Gerakan berjalan, berlari, dan melompat termasuk gerak ....",["nonlokomotor","lokomotor","diam di tempat"],1),
+bs("Berjalan termasuk gerak lokomotor.",1),
+bs("Gerak lokomotor adalah gerakan tanpa berpindah tempat.",0),
+bs("Saat berjalan, kaki melangkah secara bergantian.",1),
+bs("Saat berjalan, pandangan mata sebaiknya ke belakang.",0),
+bs("Berlari termasuk gerak berpindah tempat.",1),
+bs("Meloncat menggunakan tumpuan dua kaki.",1),
+bs("Melompat menggunakan tumpuan satu kaki.",1),
+bs("Saat berjalan, kedua tangan tidak boleh bergerak.",0),
+bs("Saat berlari, gerakan kaki lebih cepat daripada berjalan.",1),
+bs("Berjalan, berlari, dan melompat termasuk gerak lokomotor.",1),
+jd("Gerakan berpindah tempat",0),jd("Gerakan melangkahkan kaki bergantian",1),jd("Gerakan berlari dengan cepat",2),
+jd("Gerakan bertumpu pada dua kaki untuk melayang",3),jd("Gerakan bertumpu pada satu kaki",4),jd("Arah pandangan saat berjalan",5),
+jd("Bagian tubuh yang digunakan untuk melangkah",6),jd("Kedua tangan saat berjalan",7),jd("Posisi tubuh saat berjalan",8),
+jd("Gerakan yang membuat tubuh berpindah tempat",9),
+is("Gerakan berpindah tempat disebut gerak ....",["lokomotor"]),
+is("Berjalan dilakukan dengan melangkahkan kaki secara ....",["bergantian"]),
+is("Saat berjalan, pandangan mata mengarah ke ....",["depan"]),
+is("Ketika berjalan, kedua tangan diayunkan ke depan dan ke ....",["belakang"]),
+is("Berlari adalah berpindah tempat dengan langkah kaki lebih ....",["cepat"]),
+is("Gerakan meloncat menggunakan tumpuan ... kaki.",["dua","2"]),
+is("Gerakan melompat menggunakan tumpuan ... kaki.",["satu","1"]),
+is("Saat meloncat, tubuh akan melayang di ....",["udara"]),
+is("Ketika mendarat setelah meloncat, kedua kaki menapak ke ....",["tanah","lantai"]),
+is("Berjalan dan berlari membuat tubuh menjadi lebih ....",["sehat","bugar","kuat","segar"])
+];
+const SP=110,PY=0.66;let ac,idx=0,score=0,pos=0,locked=false,name="",kls="";
+function snd(f,t,d,ty="sine",v=.2,g){if(!ac)return;const o=ac.createOscillator(),k=ac.createGain();o.type=ty;o.frequency.setValueAtTime(f,ac.currentTime+t);if(g)o.frequency.linearRampToValueAtTime(g,ac.currentTime+t+d);k.gain.setValueAtTime(v,ac.currentTime+t);k.gain.exponentialRampToValueAtTime(.001,ac.currentTime+t+d);o.connect(k).connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+d+.05)}
+const good=()=>[523,659,784,1047].forEach((f,i)=>snd(f,i*.1,.25,"triangle"));
+const bad=()=>{snd(330,0,.5,"sawtooth",.15,110);snd(220,.2,.5,"square",.08,80)};
+const win=()=>[523,659,784,1047,784,1047,1319,1568].forEach((f,i)=>snd(f,i*.16,.35,"triangle",.25));
+const boing=()=>snd(300,0,.25,"sine",.2,700);
+// canvas
+const cv=$("cv"),cx=cv.getContext("2d");let W=800,H=280,cam=0;
+function rs(){const d=devicePixelRatio||1;W=cv.clientWidth;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
+addEventListener("resize",rs);
+const fr={x:0,y:0,m:"idle",t0:0,from:0,to:0,dur:650};
+const padX=i=>110+i*SP, landX=padX(41);
+let conf=[];
+function pad(x,y,i){const g=cx.createRadialGradient(x-10,y-6,4,x,y,56);g.addColorStop(0,"#7be07a");g.addColorStop(1,"#2a9d4a");
+cx.fillStyle="rgba(0,60,80,.25)";cx.beginPath();cx.ellipse(x+4,y+9,56,15,0,0,7);cx.fill();
+cx.fillStyle=g;cx.beginPath();cx.ellipse(x,y,54,15,0,.25,Math.PI*2-.25);cx.lineTo(x,y);cx.fill();
+cx.strokeStyle="#1f7a38";cx.lineWidth=2;cx.stroke();
+if(i&&i%10==0){cx.font="26px serif";cx.textAlign="center";cx.fillText("🪷",x+20,y-2)}}
+function frog(x,y,s,a){cx.save();cx.globalAlpha=a;cx.translate(x,y);cx.scale(s,s);
+const gr=cx.createRadialGradient(-8,-30,3,0,-20,34);gr.addColorStop(0,"#9cf06a");gr.addColorStop(1,"#27a844");
+cx.fillStyle="#1f8f3a";cx.beginPath();cx.ellipse(-22,-4,16,8,-.3,0,7);cx.ellipse(22,-4,16,8,.3,0,7);cx.fill();
+cx.fillStyle=gr;cx.beginPath();cx.ellipse(0,-20,28,24,0,0,7);cx.fill();
+cx.fillStyle="#e9ffb8";cx.beginPath();cx.ellipse(0,-12,17,13,0,0,7);cx.fill();
+for(const e of[-1,1]){cx.fillStyle=gr;cx.beginPath();cx.arc(e*14,-42,12,0,7);cx.fill();cx.fillStyle="#fff";cx.beginPath();cx.arc(e*14,-43,8,0,7);cx.fill();cx.fillStyle="#222";cx.beginPath();cx.arc(e*14+2,-43,4.5,0,7);cx.fill();cx.fillStyle="#fff";cx.beginPath();cx.arc(e*14+3,-45,1.7,0,7);cx.fill();
+cx.fillStyle="rgba(255,120,150,.6)";cx.beginPath();cx.arc(e*21,-22,5,0,7);cx.fill()}
+cx.strokeStyle="#7a2b2b";cx.lineWidth=3;cx.lineCap="round";cx.beginPath();cx.arc(0,-26,10,.2,Math.PI-.2);cx.stroke();cx.restore()}
+function draw(now){requestAnimationFrame(draw);if($("game").style.display=="none")return;
+const gy=H*PY;cx.clearRect(0,0,W,H);
+const bg=cx.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#9be8ff");bg.addColorStop(.35,"#45c2e0");bg.addColorStop(1,"#0f7fa6");cx.fillStyle=bg;cx.fillRect(0,0,W,H);
+cx.strokeStyle="rgba(255,255,255,.35)";cx.lineWidth=2;for(let i=0;i<14;i++){const x=((i*173-cam*.6)%(W+200)+W+200)%(W+200)-100,y=60+(i*37)%190;cx.beginPath();cx.ellipse(x,y+Math.sin(now/600+i)*3,26,5,0,0,7);cx.stroke()}
+// frog state
+let fx,fy=0,sc=1,al=1,tt=(now-fr.t0)/fr.dur;
+const px=padX(fr.from),qx=padX(fr.to);
+if(fr.m=="idle"){fx=padX(pos);fy=Math.sin(now/300)*2}
+else if(fr.m=="jump"){const k=Math.min(tt,1);fx=px+(qx-px)*k;fy=-Math.sin(k*Math.PI)*70;sc=1+Math.sin(k*Math.PI)*.1;if(k>=1){fr.m="idle";pos=fr.to}}
+else if(fr.m=="sink"){const k=Math.min(tt,1);fx=px;fy=k*50;al=1-k*.9;if(k>=1){fr.m="rise";fr.t0=now;fr.dur=500}}
+else if(fr.m=="rise"){const k=Math.min(tt,1);fx=px;fy=(1-k)*40;al=.2+k*.8;if(k>=1)fr.m="idle"}
+else if(fr.m=="cheer"){fx=landX-20;fy=-Math.abs(Math.sin((now-fr.t0)/220))*55;sc=1.15}
+cam+=(fx-W*.3-cam)*.12;
+for(let i=0;i<=40;i++){const x=padX(i)-cam;if(x>-70&&x<W+70)pad(x,gy,i)}
+// land
+const lx=landX-cam;if(lx<W+300){cx.fillStyle="#f2d388";cx.beginPath();cx.ellipse(lx+80,gy+8,170,38,0,0,7);cx.fill();cx.fillStyle="#58c04a";cx.beginPath();cx.ellipse(lx+80,gy-4,150,26,0,0,7);cx.fill();
+cx.font="54px serif";cx.textAlign="center";cx.fillText("🌴",lx+120,gy-8);cx.fillText("🏁",lx+40,gy-14);cx.font="22px sans-serif";cx.fillStyle="#fff";cx.fillText("TUJUAN",lx+80,gy+30)}
+if(fr.m=="sink"||fr.m=="rise"){cx.fillStyle="rgba(255,255,255,.7)";for(let i=0;i<6;i++){const k=((now-fr.t0)/400+i*.17)%1;cx.beginPath();cx.arc(fx-cam+Math.sin(i*2)*20,gy-10-k*50,3+i%3,0,7);cx.fill()}}
+frog(fx-cam,gy+fy-4,sc,al);
+if(fr.m=="sink"){cx.fillStyle="rgba(255,255,255,.5)";cx.beginPath();cx.ellipse(fx-cam,gy,40+tt*30,10+tt*6,0,0,7);cx.fill()}
+conf=conf.filter(c=>c.y<H);for(const c of conf){c.x+=c.vx;c.y+=c.vy;c.vy+=.12;cx.fillStyle=c.c;cx.fillRect(c.x,c.y,7,7)}
+if(fr.m=="cheer"&&Math.random()<.4)for(let i=0;i<3;i++)conf.push({x:Math.random()*W,y:-5,vx:Math.random()*2-1,vy:Math.random()*2,c:`hsl(${Math.random()*360},90%,60%)`})}
+function jump(to){fr.m="jump";fr.from=pos;fr.to=to;fr.t0=performance.now();fr.dur=650;boing()}
+function sink(){fr.m="sink";fr.from=pos;fr.t0=performance.now();fr.dur=900}
+// game flow
+function norm(s){return s.toLowerCase().trim().replace(/[^a-z0-9 ]/g,"")}
+function show(){locked=false;const q=Q[idx];$("fb").textContent="";$("fb").style.color="";
+$("lv").textContent=L[Math.floor(idx/10)];$("no").textContent="Soal "+(idx+1)+"/40";$("sk").textContent="⭐ Skor: "+Math.round(score*10)/10;
+$("q").textContent=(idx+1)+". "+q.q;const A=$("ans");A.innerHTML="";
+if(q.t=="is"){A.innerHTML='<div class="row"><input id="ia" placeholder="Ketik jawabanmu" autocomplete="off"><button id="ib">Jawab</button></div>';
+const f=()=>{const v=norm($("ia").value);if(v)fin(q.a.includes(v),q.a[0],null)};$("ib").onclick=f;$("ia").onkeydown=e=>{if(e.key=="Enter")f()};setTimeout(()=>$("ia").focus(),50);return}
+let o,ci;if(q.t=="jd"){const c=JP[q.a],w=JP.filter(x=>x!=c).sort(()=>Math.random()-.5).slice(0,2);o=[c,...w].sort(()=>Math.random()-.5);ci=o.indexOf(c)}
+else if(q.t=="pg"){const c=q.o[q.a];o=q.o.slice().sort(()=>Math.random()-.5);ci=o.indexOf(c)}else{o=q.o;ci=q.a}
+A.className="opts"+(q.t=="bs"?" two":"");
+o.forEach((t,i)=>{const b=document.createElement("button");b.textContent=(q.t=="bs"?"":"ABC"[i]+". ")+t;b.onclick=()=>{if(locked)return;[...A.children].forEach((x,j)=>{x.disabled=true;if(j==ci)x.classList.add("ok")});if(i!=ci)b.classList.add("no");fin(i==ci,o[ci],b)};A.appendChild(b)})}
+function fin(ok,ans){if(locked)return;locked=true;if($("ib"))$("ib").disabled=$("ia").disabled=true;
+const fb=$("fb");
+if(ok){score+=2.5;fb.style.color="#1b8a4a";fb.textContent="🎉 Hore, benar! Katak melompat!";good();jump(pos+1)}
+else{fb.style.color="#c43a3a";fb.textContent="😢 Yah, salah. Jawaban: "+ans;bad();sink()}
+$("sk").textContent="⭐ Skor: "+Math.round(score*10)/10;
+setTimeout(next,2100)}
+function next(){idx++;if(idx>=40)return finish();
+if(idx%10==0){$("bt").textContent="🎊 "+L[idx/10]+" 🎊";$("ban").classList.add("on");setTimeout(()=>{$("ban").classList.remove("on");show()},1500)}else show()}
+function finish(){const s=Math.round(score*10)/10,w=s>=60;
+if(w){fr.m="jump";fr.from=pos;fr.to=41;fr.t0=performance.now();fr.dur=1200;boing();
+setTimeout(()=>{fr.m="cheer";fr.t0=performance.now();win()},1250);setTimeout(()=>end(s,w),4200)}
+else setTimeout(()=>end(s,w),600)}
+function end(s,w){$("et").innerHTML=`<div style="font-size:60px">${w?"🏆🐸🎉":"🐸💪"}</div><div style="font-size:26px;font-weight:700">${w?"Selamat, "+esc(name)+"! Kamu menang!":"Ayo coba lagi, "+esc(name)+"!"}</div><div style="font-size:34px;margin:8px 0;color:#0b7a4b">Skor: ${s} / 100</div>${w?"":"<div>Butuh skor minimal 60 agar katak sampai di daratan.</div>"}`;
+$("ct").style.display=w?"block":"none";$("end").classList.add("on");window._s=s}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+$("go").onclick=()=>{name=$("nm").value.trim();kls=$("kl").value.trim();if(!name||!kls){alert("Isi nama dan kelasmu dulu, ya!");return}
+ac=ac||new(window.AudioContext||window.webkitAudioContext)();idx=0;score=0;pos=0;cam=0;fr.m="idle";conf=[];
+$("start").style.display="none";$("game").style.display="block";rs();show()};
+$("ag").onclick=()=>{$("end").classList.remove("on");$("game").style.display="none";$("start").style.display="block"};
+$("ct").onclick=()=>{const d=new Date().toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+$("cc").innerHTML=`<div style="font-size:48px">🏆🐸🏆</div><h2>SERTIFIKAT JUARA</h2><p style="font-size:20px;margin:10px 0 0">Diberikan kepada:</p><div class="n">${esc(name)}</div><p style="font-size:20px;margin:0">Kelas ${esc(kls)}</p><p style="font-size:20px">telah memenangkan <b>Lomba Katak Melompat</b><br>materi <b>Ayo, Gerak Berpindah Tempat (Gerak Lokomotor)</b><br>dengan skor <b style="font-size:28px;color:#c77700">${window._s}</b> dari 100</p><p style="margin-top:14px">${d} 🌟 Hebat sekali!</p>`;
+$("cert").classList.add("on")};
+requestAnimationFrame(draw);
+</script></body></html>
